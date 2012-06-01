@@ -1,6 +1,6 @@
 \name{addExperiments}
-\alias{addExperiments}
 \alias{Experiment}
+\alias{addExperiments}
 \title{Add experiemts to the registry.}
 \usage{
   addExperiments(reg, prob.designs, algo.designs, repls,
