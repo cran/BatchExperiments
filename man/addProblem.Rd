@@ -1,6 +1,6 @@
 \name{addProblem}
-\alias{Problem}
 \alias{addProblem}
+\alias{Problem}
 \title{Add a problem to registry.}
 \usage{
   addProblem(reg, id, static = NULL, dynamic = NULL,

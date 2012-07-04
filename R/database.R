@@ -40,6 +40,23 @@ dbGetJobs.ExperimentRegistry = function(reg, ids) {
   })
 }
 
+dbGetReplicatedExperiments = function(reg, ids) {
+  query = "SELECT job_id, job_def_id, prob_id, prob_pars, algo_id, algo_pars, COUNT(job_id) AS repls FROM %s_expanded_jobs %s GROUP BY job_def_id"
+  if (missing(ids))
+    query = sprintf(query, reg$id, "")
+  else
+    query = sprintf(query, reg$id, sprintf("WHERE job_id IN (%s)", collapse(ids)))
+  tab = BatchJobs:::dbDoQuery(reg, query, flags="ro")
+  lapply(seq_len(nrow(tab)), function(i) {
+    x = tab[i,]
+    prob.pars = unserialize(charToRaw(x$prob_pars))
+    algo.pars = unserialize(charToRaw(x$algo_pars))
+    makeReplicatedExperiment(id=x$job_def_id, prob.id=x$prob_id, prob.pars=prob.pars,
+                                algo.id=x$algo_id, algo.pars=algo.pars, repls=x$repls)
+  })
+}
+
+
 dbFindExperiments = function(reg, prob.pattern, algo.pattern, repls, like=TRUE) {
   clause = character(0L)
   if (!missing(repls))
@@ -64,14 +81,14 @@ dbFindExperiments = function(reg, prob.pattern, algo.pattern, repls, like=TRUE) 
 }
 
 dbAddProblem = function(reg, id, seed) {
-  #TODO: replace OR REPLACE with an option, this is not supported by all DBMS
+  #FIXME: replace OR REPLACE with an option, this is not supported by all DBMS
   query = sprintf("INSERT OR REPLACE INTO %s_prob_def (prob_id, pseed) VALUES ('%s', %s)",
                   reg$id, id, ifelse(is.null(seed), "NULL", seed))
   BatchJobs:::dbDoQuery(reg, query, flags="rw")
 }
 
 dbAddAlgorithm = function(reg, id) {
-  #TODO: replace OR REPLACE with an option, this is not supported by all DBMS
+  #FIXME: replace OR REPLACE with an option, this is not supported by all DBMS
   query = sprintf("INSERT OR REPLACE INTO %s_algo_def (algo_id) VALUES ('%s')", reg$id, id)
   BatchJobs:::dbDoQuery(reg, query, flags="rw")
 }
@@ -93,5 +110,15 @@ dbGetProblemIds = function(reg) {
 
 dbGetAlgorithmIds = function(reg) {
   query = sprintf("SELECT algo_id FROM %s_algo_def", reg$id)
+  BatchJobs:::dbDoQuery(reg, query)$algo_id
+}
+
+dbGetProblemIdsNotAdded = function(reg) {
+  query = sprintf("SELECT prob_id FROM %1$s_prob_def EXCEPT SELECT DISTINCT prob_id FROM %1$s_job_def", reg$id)
+  BatchJobs:::dbDoQuery(reg, query)$prob_id
+}
+
+dbGetAlgorithmIdsNotAdded = function(reg) {
+  query = sprintf("SELECT algo_id FROM %1$s_algo_def EXCEPT SELECT DISTINCT algo_id FROM %1$s_job_def", reg$id)
   BatchJobs:::dbDoQuery(reg, query)$algo_id
 }

@@ -1,6 +1,6 @@
 \name{addExperiments}
-\alias{Experiment}
 \alias{addExperiments}
+\alias{Experiment}
 \title{Add experiemts to the registry.}
 \usage{
   addExperiments(reg, prob.designs, algo.designs, repls,
@@ -21,7 +21,7 @@
   \item{algo.designs}{[\code{character} |
   \code{\link{Design}} | list of \code{\link{Design}}]\cr
   Either algorithm ids, a single algorithm design or a list
-  of problem algorithm, the latter two created by
+  of algorithm designs, the latter two created by
   \code{\link{makeDesign}}.  If missing, all algorithms are
   selected (without associating a design), and this is the
   default.}

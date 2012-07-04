@@ -35,6 +35,7 @@ ad2 <- makeDesign("a2", exhaustive=list(alpha=1:2, beta=5:6))
 addExperiments(reg, algo.designs=list(ad1, ad2), repls=2)
 submitJobs(reg)
 data <- reduceResultsExperiments(reg)
+library(plyr)
 ddply(data, getResultVars(data, "group"), summarise, mean_y = mean(y))
 }
 
