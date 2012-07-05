@@ -1,6 +1,6 @@
 \name{addAlgorithm}
-\alias{addAlgorithm}
 \alias{Algorithm}
+\alias{addAlgorithm}
 \title{Add an algorithm to registry.}
 \usage{
   addAlgorithm(reg, id, fun, overwrite = FALSE)
