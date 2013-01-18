@@ -19,11 +19,14 @@
   \item{dynamic}{[\code{function(job, static, ...)}]\cr R
   generator function that creates dynamic / stochastic part
   of problem instance, which might be dependent on
-  parameters.  First parameter \code{job} is a \link{Job}
-  object, second is static problem part \code{static}.
-  Further parameters from design are passed to ... argument
-  on instance creation time.  The arguments \code{job} and
-  \code{static} may be omitted.  Default is \code{NULL}.}
+  parameters.  First parameter \code{job} is a
+  \code{\link[BatchJobs]{Job}} object, second is static
+  problem part \code{static}.  Further parameters from
+  design are passed to ... argument on instance creation
+  time.  The arguments \code{job} and \code{static} may be
+  omitted.  To retrieve job informations from the
+  \code{job} object see the documentation on
+  \link{ExperimentJob}.  Default is \code{NULL}.}
 
   \item{seed}{[\code{integer(1)}]\cr Start seed for this
   problem. This allows the \dQuote{synchronization} of a

@@ -37,12 +37,8 @@ designIterator = function(ex, .design = data.frame()) {
     invisible(TRUE)
   }
 
-  state.last = c(vapply(ex, length, 1L), max(nrow(.design), 1L))
-  names(state.last) = c(names(ex), ".design.row")
-  state.last = sort(state.last, decreasing = TRUE)
-
-  state.init = c(0L, rep(1L, length(state.last) - 1L))
-  names(state.init) = names(state.last)
+  state.last = sort(setNames(c(vapply(ex, length, 1L), max(nrow(.design), 1L)), c(names(ex), ".design.row")), decreasing = TRUE)
+  state.init = setNames(c(0L, rep(1L, length(state.last) - 1L)), names(state.last))
   counter.max = prod(state.last)
   if (counter.max > .Machine$integer.max)
     stop("The generated design is too big. Designs with up to ",
@@ -66,6 +62,9 @@ designIterator = function(ex, .design = data.frame()) {
 #' can use in \code{\link{addExperiments}}.
 #' All parameters in \code{design} and \code{exhaustive} be \dQuote{primitive}
 #' in the sense that either \code{is.atomic} is \code{TRUE} or \code{is.factor} is \code{TRUE}.
+#'
+#' Be aware of R's default behaviour of converting strings into factors if you use the \code{design}
+#' parameter. See option \code{stringsAsFactors} in \code{\link{data.frame}} to turn this off.
 #' @param id [\code{character(1)}]\cr
 #'   Id of algorithm or problem.
 #' @param design [\code{data.frame}]\cr
@@ -78,6 +77,18 @@ designIterator = function(ex, .design = data.frame()) {
 #' @return [\code{\link{Design}}].
 #' @export
 #' @aliases Design
+#' @examples \dontrun{
+#' # simple design for algorithm "a1" with no parameters:
+#' design <- makeDesign("a1")
+#'
+#' # design for problem "p1" using predefined parameter combinations
+#' design <- makeDesign("p1", design = data.frame(alpha = 0:1, beta = c(0.1, 0.2)))
+#'
+#' # creating a list of designs for several algorithms at once, all using the same
+#' # exhaustive grid of parameters
+#' designs <- lapply(c("a1", "a2", "a3"), makeDesign,
+#'                   exhaustive = list(alpha = 0:1, gamma = 1:10/10))
+#' }
 makeDesign = function(id, design=data.frame(), exhaustive=list()) {
   checkArg(id, "character", len=1L, na.ok=FALSE)
   checkArg(design, "data.frame")
@@ -95,8 +106,8 @@ makeDesign = function(id, design=data.frame(), exhaustive=list()) {
     if (!all(vapply(design, function(x) is.atomic(x) | is.factor(x), logical(1L))))
       stop("All columns of design must be either of atomic type or a factor!")
   }
-  structure(list(id = id, designIter=designIterator(exhaustive, .design = design)),
-            class = "Design")
+  setClasses(list(id = id, designIter=designIterator(exhaustive, .design = design)),
+             "Design")
 }
 
 #' @S3method print Design

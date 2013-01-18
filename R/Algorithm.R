@@ -1,5 +1,5 @@
 makeAlgorithm = function(id, fun) {
-  structure(list(id=id, fun=fun), class="Algorithm")
+  setClasses(list(id=id, fun=fun), "Algorithm")
 }
 
 #' Add an algorithm to registry.
@@ -11,12 +11,15 @@ makeAlgorithm = function(id, fun) {
 #'   Name of algorithm.
 #' @param fun [\code{function(job, static, dynamic, ...)}]\cr
 #'   Function which applies the algorithm to a problem instance.
-#'   Takes a \link{Job} object, the \code{static} problem part and the evaluated \code{dynamic}
+#'   Takes a \code{\link[BatchJobs]{Job}} object, the \code{static} problem part and the evaluated \code{dynamic}
 #'   problem part as arguments.
 #'   You may omit any of \code{job}, \code{static} or \code{dynamic}.
 #'   In this case, the respective arguments will not get passed to \code{fun}.
 #'   Further parameters from \link{Design} are passed to ... argument.
 #'   If you are using multiple result files this function must return a named list.
+#'
+#'   To retrieve job informations from the \code{job} object
+#'   see the documentation on \link{ExperimentJob}.
 #' @param overwrite [\code{logical(1)}]\cr
 #'   Overwrite the algorithm file if it already exists?
 #'   Default is \code{FALSE}.

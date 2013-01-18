@@ -1,12 +1,10 @@
-\name{reduceResultsExperiments}
-\alias{ReducedResultsExperiments}
-\alias{reduceResultsExperiments}
-\title{Reduce results into a data.frame with all relevant information.}
+\name{reduceResultsExperimentsParallel}
+\alias{reduceResultsExperimentsParallel}
+\title{Reduce very many results in parallel.}
 \usage{
-  reduceResultsExperiments(reg, ids, part = NA_character_,
-    fun, ...,
-    strings.as.factors = default.stringsAsFactors(),
-    block.size)
+  reduceResultsExperimentsParallel(reg, ids,
+    part = as.character(NA), fun, ..., njobs = 20L,
+    strings.as.factors = default.stringsAsFactors())
 }
 \arguments{
   \item{reg}{[\code{\link{ExperimentRegistry}}]\cr
@@ -31,29 +29,24 @@
 
   \item{...}{[any]\cr Additional arguments to \code{fun}.}
 
+  \item{njobs}{[\code{integer(1)}] Number of parallel jobs
+  to create.  Default is 20.}
+
   \item{strings.as.factors}{[\code{logical(1)}] Should all
   character columns in result be converted to factors?
   Default is \code{default.stringsAsFactors()}.}
-
-  \item{block.size}{[\code{integer(1)}] Results will be
-  fetched in blocks of this size.  Default is max(100, 5
-  percent of ids).}
 }
 \value{
   [\code{data.frame}]. Aggregated results, containing
   problem and algorithm paramaters and collected values.
 }
 \description{
-  Generates a \code{data.frame} with one row per job id.
-  The columns are: ids of problem and algorithm (named
-  \dQuote{prob} and \dQuote{algo}), one column per
-  parameter of problem or algorithm (named by the parameter
-  name), the replication number (named \dQuote{repl}) and
-  all columns defined in the function to collect the
-  values. Note that you cannot rely on the order of the
-  columns. If a paramater does not have a setting for a
-  certain job / experiment it is set to \code{NA}. Have a
-  look at \code{\link{getResultVars}} if you want to use
-  somethink like \code{\link{ddply}} on the results.
+  Basically the same as
+  \code{\link{reduceResultsExperiments}} but creates a few
+  (hopefully short) jobs to reduce the results in parallel.
+  The function internally calls
+  \code{\link{batchMapQuick}}, does \dQuote{busy-waiting}
+  till all jobs are done and cleans all temporary files up.
+  Useful when you have very results and reducing is slow.
 }
 

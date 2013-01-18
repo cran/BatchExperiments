@@ -4,7 +4,7 @@
 #' about the selected experiments. The data.frame is constructed
 #' by building the columns \dQuote{prob, <prob.pars>, algo, <algo.pars>, repl},
 #' \code{\link{rbind.fill}} is used to connect the rows, so if some parameters do not appear
-#  in some experiments, they will be set to \code{NA}.
+#'  in some experiments, they will be set to \code{NA}.
 #' Now only the columns in \code{show} will be selected, how many of such experiments
 #' exist will be counted in a new column \dQuote{.count}.
 #'
@@ -30,26 +30,7 @@
 #' print(summarizeExperiments(reg, show=c("prob", "algo", "alpha", "gamma")))
 summarizeExperiments = function(reg, ids, show=c("prob", "algo")) {
   checkArg(reg, "ExperimentRegistry")
+  BatchJobs:::syncRegistry(reg)
   checkArg(show, "character", min.len=1, na.ok=FALSE)
-  # FIXME: the following code is still a bit slow
-  # but we gain much by handling repls in the DB
-  rexps = dbGetReplicatedExperiments(reg, ids)
-  prob = do.call(rbind.fill, lapply(rexps, function(e)
-    if (length(e$prob.pars) == 0L)
-      data.frame(prob=e$prob.id)
-    else
-      cbind(prob=e$prob.id, as.data.frame(e$prob.pars))
-  ))
-  algo = do.call(rbind.fill, lapply(rexps, function(e)
-    if (length(e$algo.pars) == 0L)
-      data.frame(algo=e$algo.id)
-    else
-      cbind(algo=e$algo.id, as.data.frame(e$algo.pars))
-  ))
-  repls = extractSubList(rexps, "repls", integer(1L))
-  d = as.data.frame(cbind(prob, algo, repls=repls))
-  diff = setdiff(show, colnames(d))
-  if (length(diff) > 0)
-    stopf("Trying to select columns in arg 'show' which are not available: %s", collapse(diff))
-  ddply(d, show, function(x) c(.count=sum(x$repls)))
+  dbSummarizeExperiments(reg, ids, show)
 }

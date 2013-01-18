@@ -26,9 +26,7 @@ dbCreateExpandedJobsViewBE = function(reg) {
 #' @method dbGetJobs ExperimentRegistry
 #' @S3method dbGetJobs ExperimentRegistry
 dbGetJobs.ExperimentRegistry = function(reg, ids) {
-  cols = c("job_id", "prob_id", "prob_pars", "algo_id",
-           "algo_pars", "seed", "prob_seed", "repl")
-  query = sprintf("SELECT %s FROM %s_expanded_jobs", collapse(cols), reg$id)
+  query = sprintf("SELECT job_id, prob_id, prob_pars, algo_id, algo_pars, seed, prob_seed, repl FROM %s_expanded_jobs", reg$id)
   tab = BatchJobs:::dbSelectWithIds(reg, query, ids)
 
   lapply(seq_len(nrow(tab)), function(i) {
@@ -40,24 +38,31 @@ dbGetJobs.ExperimentRegistry = function(reg, ids) {
   })
 }
 
-dbGetReplicatedExperiments = function(reg, ids) {
-  query = "SELECT job_id, job_def_id, prob_id, prob_pars, algo_id, algo_pars, COUNT(job_id) AS repls FROM %s_expanded_jobs %s GROUP BY job_def_id"
-  if (missing(ids))
-    query = sprintf(query, reg$id, "")
-  else
-    query = sprintf(query, reg$id, sprintf("WHERE job_id IN (%s)", collapse(ids)))
-  tab = BatchJobs:::dbDoQuery(reg, query, flags="ro")
-  lapply(seq_len(nrow(tab)), function(i) {
-    x = tab[i,]
-    prob.pars = unserialize(charToRaw(x$prob_pars))
-    algo.pars = unserialize(charToRaw(x$algo_pars))
-    makeReplicatedExperiment(id=x$job_def_id, prob.id=x$prob_id, prob.pars=prob.pars,
-                                algo.id=x$algo_id, algo.pars=algo.pars, repls=x$repls)
-  })
+
+dbSummarizeExperiments = function(reg, ids, show) {
+  if (all(show %in% c("prob", "algo"))) {
+    cols = sprintf("%s_id", show)
+    query = sprintf("SELECT %s, COUNT(job_id) FROM %s_expanded_jobs", collapse(cols), reg$id)
+    summary = setNames(BatchJobs:::dbSelectWithIds(reg, query, ids, group.by = cols, reorder=FALSE),
+                       c(show, ".count"))
+  } else {
+    uc = function(x) unserialize(charToRaw(x))
+    query = sprintf("SELECT job_id, prob_id AS prob, prob_pars, algo_id AS algo, algo_pars FROM %s_expanded_jobs", reg$id)
+    tab = BatchJobs:::dbSelectWithIds(reg, query, ids, reorder=FALSE)
+    tab = cbind(subset(tab, select = c("job_id", "prob", "algo")),
+      BatchJobs:::list2df(lapply(tab$prob_pars, uc)),
+      BatchJobs:::list2df(lapply(tab$algo_pars, uc)))
+
+    diff = setdiff(show, colnames(tab))
+    if (length(diff) > 0L)
+      stopf("Trying to select columns in arg 'show' which are not available: %s", collapse(diff))
+    summary = ddply(tab, show, nrow)
+  }
+  summary
 }
 
 
-dbFindExperiments = function(reg, prob.pattern, algo.pattern, repls, like=TRUE) {
+dbFindExperiments = function(reg, ids, prob.pattern, algo.pattern, repls, like=TRUE) {
   clause = character(0L)
   if (!missing(repls))
     clause = c(clause, sprintf("repl IN (%s)", collapse(repls)))
@@ -75,9 +80,11 @@ dbFindExperiments = function(reg, prob.pattern, algo.pattern, repls, like=TRUE) 
   }
 
   query = sprintf("SELECT job_id from %s_expanded_jobs", reg$id)
-  if (length(clause) > 0L)
-    query = paste(query, "WHERE", collapse(clause, sep = " AND "))
-  BatchJobs:::dbDoQuery(reg, query)$job_id
+  if (length(clause) == 0L)
+    return(BatchJobs:::dbSelectWithIds(reg, query, ids)$job_id)
+
+  query = paste(query, "WHERE", collapse(clause, sep = " AND "))
+  BatchJobs:::dbSelectWithIds(reg, query, ids, where=FALSE)$job_id
 }
 
 dbAddProblem = function(reg, id, seed) {

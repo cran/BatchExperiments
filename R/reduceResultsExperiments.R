@@ -28,22 +28,23 @@
 #'   Should all character columns in result be converted to factors?
 #'   Default is \code{default.stringsAsFactors()}.
 #' @param block.size [\code{integer(1)}]
-#'   Results will be fetched in blocks of size \code{block.size}.
-#'   Default is 100.
-#' @return [\code{data.frame}] Aggregated results, containing problem and algorithm paramaters and collected values.
+#'   Results will be fetched in blocks of this size.
+#'   Default is max(100, 5 percent of ids).
+#' @return [\code{data.frame}]. Aggregated results, containing problem and algorithm paramaters and collected values.
 #' @aliases ReducedResultsExperiments
 #' @export
 reduceResultsExperiments = function(reg, ids, part=NA_character_, fun, ...,
-  strings.as.factors=default.stringsAsFactors(), block.size=100L) {
+  strings.as.factors=default.stringsAsFactors(), block.size) {
 
   checkArg(reg, cl = "ExperimentRegistry")
-  done = BatchJobs:::dbGetDone(reg)
+  BatchJobs:::syncRegistry(reg)
   if (missing(ids)) {
-    ids = done
+    ids = BatchJobs:::dbFindDone(reg)
   } else {
     ids = BatchJobs:::checkIds(reg, ids)
-    if (any(ids %nin% done))
-      stopf("No results available for experiments with ids: %s", collapse(ids[ids %nin% done]))
+    ndone = BatchJobs:::dbFindDone(reg, ids, negate=TRUE)
+    if (length(ndone) > 0L)
+      stopf("No results available for experiments with ids: %s", collapse(ndone))
   }
   BatchJobs:::checkPart(reg, part)
   if (missing(fun)){
@@ -53,8 +54,12 @@ reduceResultsExperiments = function(reg, ids, part=NA_character_, fun, ...,
     checkArg(fun, formals=c("job", "res"))
   }
   checkArg(strings.as.factors, "logical", len=1L, na.ok=FALSE)
-  block.size = convertInteger(block.size)
-  checkArg(block.size, "integer", len=1L, na.ok=FALSE)
+  if (missing(block.size)) {
+    block.size = max(100, as.integer(0.05 * length(ids)))
+  } else {
+    block.size = convertInteger(block.size)
+    checkArg(block.size, "integer", len=1L, na.ok=FALSE)
+  }
 
   n = length(ids)
   messagef("Reducing %i results...", n)
@@ -65,21 +70,27 @@ reduceResultsExperiments = function(reg, ids, part=NA_character_, fun, ...,
       list(algo = j$algo.id),
       j$algo.pars,
       list(repl = j$repl),
-      fun(j, loadResult(reg, j$id, part, check.id=FALSE), ...))
+      fun(j, BatchJobs:::getResult(reg, j$id, part), ...))
   }
 
   aggr = data.frame()
-  ids = chunk(ids, chunk.size=block.size)
-  bar = makeProgressBar(max=length(ids), label="reduceResultsExperiments")
+  ids2 = chunk(ids, chunk.size=block.size, shuffle=FALSE)
+  bar = makeProgressBar(max=length(ids2), label="reduceResultsExperiments")
   bar$set()
   prob.pars = character(0L)
   algo.pars = character(0L)
 
+
   tryCatch({
-    for(id.chunk in ids) {
+    for(id.chunk in ids2) {
+      # FIXME: getJobs is inefficient here, we just want a data.frame
+      # FIXME: also check all other functions using getJobs / rbind.fill
       jobs = getJobs(reg, id.chunk, check.ids=FALSE)
       prob.pars = unique(c(prob.pars, unlist(lapply(jobs, function(j) names(j$prob.pars)))))
       algo.pars = unique(c(algo.pars, unlist(lapply(jobs, function(j) names(j$algo.pars)))))
+      # FIXME m/b use list2df instead of rbind.fill
+      # -> major problem: how to deal with missing names in return value of fun?
+      #    rbind.fill might not do the right thing here, also.
       results = lapply(jobs, getRow, reg = reg, part = part, ...)
       aggr = rbind.fill(c(list(aggr), lapply(results, as.data.frame, stringsAsFactors=FALSE)))
       bar$inc(1L)
@@ -87,7 +98,9 @@ reduceResultsExperiments = function(reg, ids, part=NA_character_, fun, ...,
   }, error=bar$error)
 
   aggr = stringsAsFactors(aggr, strings.as.factors)
-  class(aggr) = c("ReducedResultsExperiments", class(aggr))
+  if (nrow(aggr) > 0)
+    aggr = setRowNames(cbind(id=ids, aggr), ids)
+  aggr = addClasses(aggr, "ReducedResultsExperiments")
   attr(aggr, "prob.pars.names") = prob.pars
   attr(aggr, "algo.pars.names") = algo.pars
   return(aggr)
@@ -113,7 +126,7 @@ reduceResultsExperiments = function(reg, ids, part=NA_character_, fun, ...,
 #' addAlgorithm(reg, id="a1",
 #'   fun=function(static, dynamic, alpha) c(y=static*alpha))
 #' addAlgorithm(reg, id="a2",
-#'   fun=function(static, dynamica, alpha, beta) c(y=static*alpha+beta))
+#'   fun=function(static, dynamic, alpha, beta) c(y=static*alpha+beta))
 #' ad1 <- makeDesign("a1", exhaustive=list(alpha=1:2))
 #' ad2 <- makeDesign("a2", exhaustive=list(alpha=1:2, beta=5:6))
 #' addExperiments(reg, algo.designs=list(ad1, ad2), repls=2)
@@ -130,6 +143,6 @@ getResultVars = function(data, type="group") {
     algo = c("algo", attr(data, "algo.pars.names")),
     algo.pars = attr(data, "algo.pars.names"),
     group = c("prob", "algo", attr(data, "prob.pars.names"), attr(data, "algo.pars.names")),
-    result = setdiff(colnames(data), c("algo", "prob", "repl", attr(data, "prob.pars.names"), attr(data, "algo.pars.names")))
+    result = setdiff(colnames(data), c("id", "algo", "prob", "repl", attr(data, "prob.pars.names"), attr(data, "algo.pars.names")))
   )
 }

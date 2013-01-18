@@ -1,6 +1,6 @@
 makeProblem = function(id, static, dynamic) {
-  structure(list(id=id, static=static, dynamic=dynamic),
-            class="Problem")
+  setClasses(list(id=id, static=static, dynamic=dynamic),
+             "Problem")
 }
 
 #' Add a problem to registry.
@@ -15,9 +15,11 @@ makeProblem = function(id, static, dynamic) {
 #'   Default is \code{NULL}.
 #' @param dynamic [\code{function(job, static, ...)}]\cr
 #'   R generator function that creates dynamic / stochastic part of problem instance, which might be dependent on parameters.
-#'   First parameter \code{job} is a \link{Job} object, second is static problem part \code{static}.
+#'   First parameter \code{job} is a \code{\link[BatchJobs]{Job}} object, second is static problem part \code{static}.
 #'   Further parameters from design are passed to ... argument on instance creation time.
 #'   The arguments \code{job} and \code{static} may be omitted.
+#'   To retrieve job informations from the \code{job} object
+#'   see the documentation on \link{ExperimentJob}.
 #'   Default is \code{NULL}.
 #' @param seed [\code{integer(1)}]\cr
 #'   Start seed for this problem. This allows the \dQuote{synchronization} of a stochastic
@@ -83,4 +85,36 @@ getProblemPart = function(file.dir, id, part) {
   if (!file.exists(fn))
     return(NULL)
   load2(fn, part)
+}
+
+# returns a functions which returns the static problem part
+getStaticLazy = function(reg, job) {
+  function() getProblemPart(reg$file.dir, job$prob.id, "static")
+}
+
+# returns a function which computes the dynamic problem part
+getDynamicLazy = function(reg, job) {
+  dynamic.fun = getProblemPart(reg$file.dir, job$prob.id, "dynamic")
+  if (is.null(dynamic.fun))
+    return(function() NULL)
+
+  prob.use = c("job", "static")
+  prob.use = setNames(prob.use %in% names(formals(dynamic.fun)), prob.use)
+  if (prob.use["static"])
+    static = getStaticLazy(reg, job)
+
+  # we avoid copies and let lazy evaluation kick in if the specific parts are not
+  # needed. Seems a bit cumbersome, but worth it
+  f = switch(sum(c(1L, 2L)[prob.use]) + 1L,
+             function(...) dynamic.fun(...),
+             function(...) dynamic.fun(job=job, ...),
+             function(...) dynamic.fun(static=static(), ...),
+             function(...) dynamic.fun(job=job, static=static(), ...))
+
+  function() {
+    messagef("Generating problem %s ...", job$prob.id)
+    seed = BatchJobs:::seeder(reg, job$prob.seed)
+    on.exit(seed$reset())
+    do.call(f, job$prob.pars)
+  }
 }

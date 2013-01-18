@@ -2,12 +2,15 @@
 \alias{findExperiments}
 \title{Find ids of experiments that match a query.}
 \usage{
-  findExperiments(reg, prob.pattern, prob.pars,
+  findExperiments(reg, ids, prob.pattern, prob.pars,
     algo.pattern, algo.pars, repls, match.substring = TRUE)
 }
 \arguments{
   \item{reg}{[\code{\link{ExperimentRegistry}}]\cr
   Registry.}
+
+  \item{ids}{[\code{integer}]\cr Ids of selected
+  experiments to restrict to.  Default is all experiments.}
 
   \item{prob.pattern}{[\code{character(1)}]\cr If not
   missing, all problem ids that match this string are
