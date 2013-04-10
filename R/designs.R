@@ -7,7 +7,7 @@
 #   All elements of the list must be primitive vectors like numeric, integer, factor, etc.
 # @param .design [\code{data.frame}]\cr
 #   The design. Rows define one 'point'.
-# @return List of funs. nextElem returns a named list.
+# @return List of funs. nextElem returns a named list (ordered by list element names).
 designIterator = function(ex, .design = data.frame()) {
   nextState = function(state, pos = 1L) {
     if (state[pos] < state.last[pos])
@@ -20,11 +20,10 @@ designIterator = function(ex, .design = data.frame()) {
     state <<- nextState(state)
     counter <<- counter + 1L
 
-    c(as.list(.design[state[! is.ex.state], , drop = FALSE]),
-      mapply(function(n, s) ex[[n]][s],
-             n = names.ex.state,
-             s = state[is.ex.state],
-             SIMPLIFY = FALSE))
+    x = c(as.list(.design[state[! is.ex.state], , drop = FALSE]),
+          mapply(function(n, s) ex[[n]][s], n = names.ex.state, s = state[is.ex.state], SIMPLIFY = FALSE))
+    # FIXME names2 is going to BBmisc
+    x[order(BatchJobs:::names2(x))]
   }
 
   hasNext = function() {
@@ -37,8 +36,9 @@ designIterator = function(ex, .design = data.frame()) {
     invisible(TRUE)
   }
 
+
   state.last = sort(setNames(c(vapply(ex, length, 1L), max(nrow(.design), 1L)), c(names(ex), ".design.row")), decreasing = TRUE)
-  state.init = setNames(c(0L, rep(1L, length(state.last) - 1L)), names(state.last))
+  state.init = setNames(c(0L, rep.int(1L, length(state.last) - 1L)), names(state.last))
   counter.max = prod(state.last)
   if (counter.max > .Machine$integer.max)
     stop("The generated design is too big. Designs with up to ",
@@ -53,7 +53,9 @@ designIterator = function(ex, .design = data.frame()) {
   list(nextElem = nextElem,
        hasNext = hasNext,
        reset = reset,
-       n.states = counter.max)
+       n.states = counter.max,
+       storage = c(vapply(.design, storage.mode, character(1L)),
+                   vapply(ex, storage.mode, character(1L))))
 }
 
 #' Create parameter designs for problems and algorithms.
@@ -90,6 +92,10 @@ designIterator = function(ex, .design = data.frame()) {
 #'                   exhaustive = list(alpha = 0:1, gamma = 1:10/10))
 #' }
 makeDesign = function(id, design=data.frame(), exhaustive=list()) {
+  # ... if we had the registry here, we could do some sanity checks, e.g.
+  # test if the storage mode of parameters matches the storage mode of those
+  # in the database
+  # if we push out a not backward compatible version, do this here.
   checkArg(id, "character", len=1L, na.ok=FALSE)
   checkArg(design, "data.frame")
   checkArg(exhaustive, "list")
@@ -106,6 +112,7 @@ makeDesign = function(id, design=data.frame(), exhaustive=list()) {
     if (!all(vapply(design, function(x) is.atomic(x) | is.factor(x), logical(1L))))
       stop("All columns of design must be either of atomic type or a factor!")
   }
+
   setClasses(list(id = id, designIter=designIterator(exhaustive, .design = design)),
              "Design")
 }
@@ -113,5 +120,7 @@ makeDesign = function(id, design=data.frame(), exhaustive=list()) {
 #' @S3method print Design
 print.Design = function(x, ...) {
   n = x$designIter$n.states
+  storage = x$designIter$storage
   catf("Design for %s with %i row%s", x$id, n, ifelse(n == 1L, "", "s"))
+  cat(collapse(sprintf("  %-10s: %s", names(storage), storage), "\n"))
 }

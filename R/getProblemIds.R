@@ -4,6 +4,6 @@
 #' @return [\code{character}].
 #' @export
 getProblemIds = function(reg) {
-  checkArg(reg, "ExperimentRegistry")
+  checkExperimentRegistry(reg, strict=TRUE)
   dbGetProblemIds(reg)
 }

@@ -33,12 +33,19 @@
 #' @param packages [\code{character}]\cr
 #'   Packages that will always be loaded on each node.
 #'   Default is \code{character(0)}.
+#' @param skip [\code{logical(1)}]\cr
+#'   Skip creation of a new registry if a registry is found in \code{file.dir}.
+#'   Defaults to \code{TRUE}.
 #' @return [\code{\link{ExperimentRegistry}}]
 #' @export
 #' @aliases ExperimentRegistry
-makeExperimentRegistry = function(id="BatchExperimentRegistry", file.dir, sharding=TRUE,
-                                  work.dir, multiple.result.files = FALSE, seed,
-                                  packages=character(0L)) {
+makeExperimentRegistry = function(id="BatchExperimentRegistry", file.dir, sharding=TRUE, work.dir, multiple.result.files = FALSE,
+                                  seed, packages=character(0L), skip = TRUE) {
+  if (missing(file.dir))
+    file.dir = file.path(getwd(), paste(id, "files", sep="-"))
+  checkArg(skip, "logical", len=1L, na.ok=FALSE)
+  if (skip && BatchJobs:::isRegistryDir(file.dir))
+    return(loadRegistry(file.dir = file.dir))
   reg = BatchJobs:::makeRegistryInternal(id, file.dir, sharding,
     work.dir, multiple.result.files, seed, union(packages, "BatchExperiments"))
   class(reg) = c("ExperimentRegistry", "Registry")
@@ -63,4 +70,17 @@ print.ExperimentRegistry = function(x, ...) {
   cat("  Multiple result files:", x$multiple.result.files, "\n")
   cat("  Seed:", x$seed, "\n")
   cat("  Required packages:", paste(names(x$packages), collapse=", "), "\n")
+}
+
+checkExperimentRegistry = function(reg, strict = FALSE) {
+  cl = class(reg)
+  expected = "ExperimentRegistry"
+  if (strict) {
+    if (head(cl, 1L) != expected)
+      stopf("Registry class mismatch: Expected argument with first class '%s'", expected)
+  } else {
+    if (expected %nin% cl)
+      stopf("Registry class mismatch: Expected argument of class '%s'", expected)
+  }
+  invisible(TRUE)
 }

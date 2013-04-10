@@ -142,14 +142,14 @@
 #' reduceResultsExperiments(reg, fun=function(job, res) res[c("value", "convergence")])
 #' @aliases Experiment
 #' @export
-addExperiments = function(reg, prob.designs, algo.designs, repls, skip.defined=FALSE) {
+addExperiments = function(reg, prob.designs, algo.designs, repls=1L, skip.defined=FALSE) {
   UseMethod("addExperiments")
 }
 
 #' @method addExperiments ExperimentRegistry
 #' @S3method addExperiments ExperimentRegistry
 addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, repls=1L, skip.defined=FALSE) {
-  checkArg(reg, "ExperimentRegistry")
+  checkExperimentRegistry(reg, strict=TRUE)
   BatchJobs:::syncRegistry(reg)
 
   # check prob.designs

@@ -1,10 +1,10 @@
 \name{addExperiments}
-\alias{Experiment}
 \alias{addExperiments}
+\alias{Experiment}
 \title{Add experiemts to the registry.}
 \usage{
-  addExperiments(reg, prob.designs, algo.designs, repls,
-    skip.defined = FALSE)
+  addExperiments(reg, prob.designs, algo.designs,
+    repls = 1L, skip.defined = FALSE)
 }
 \arguments{
   \item{reg}{[\code{\link{ExperimentRegistry}}]\cr
