@@ -27,7 +27,7 @@ dbGetJobs.ExperimentRegistry = function(reg, ids) {
   query = sprintf("SELECT job_id, prob_id, prob_pars, algo_id, algo_pars, seed, prob_seed, repl FROM %s_expanded_jobs", reg$id)
   tab = BatchJobs:::dbSelectWithIds(reg, query, ids)
 
-  lapply(seq_len(nrow(tab)), function(i) {
+  lapply(seq_row(tab), function(i) {
     x = tab[i,]
     prob.pars = unserialize(charToRaw(x$prob_pars))
     algo.pars = unserialize(charToRaw(x$algo_pars))
@@ -108,22 +108,22 @@ dbRemoveAlgorithm = function(reg, id) {
   BatchJobs:::dbDoQuery(reg, query, flags="rw")
 }
 
-dbGetProblemIds = function(reg) {
+dbGetAllProblemIds = function(reg) {
   query = sprintf("SELECT prob_id FROM %s_prob_def", reg$id)
   BatchJobs:::dbDoQuery(reg, query)$prob_id
 }
 
-dbGetAlgorithmIds = function(reg) {
+dbGetAllAlgorithmIds = function(reg) {
   query = sprintf("SELECT algo_id FROM %s_algo_def", reg$id)
   BatchJobs:::dbDoQuery(reg, query)$algo_id
 }
 
-dbGetProblemIdsNotAdded = function(reg) {
-  query = sprintf("SELECT prob_id FROM %1$s_prob_def EXCEPT SELECT DISTINCT prob_id FROM %1$s_job_def", reg$id)
-  BatchJobs:::dbDoQuery(reg, query)$prob_id
+dbGetProblemIds = function(reg, ids) {
+  query = sprintf("SELECT job_id, prob_id FROM %s_expanded_jobs", reg$id)
+  BatchJobs:::dbSelectWithIds(reg, query, ids)$prob_id
 }
 
-dbGetAlgorithmIdsNotAdded = function(reg) {
-  query = sprintf("SELECT algo_id FROM %1$s_algo_def EXCEPT SELECT DISTINCT algo_id FROM %1$s_job_def", reg$id)
-  BatchJobs:::dbDoQuery(reg, query)$algo_id
+dbGetAlgorithmIds = function(reg, ids) {
+  query = sprintf("SELECT job_id, prob_id FROM %s_expanded_jobs", reg$id)
+  BatchJobs:::dbSelectWithIds(reg, query, ids)$algo_id
 }

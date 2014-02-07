@@ -22,8 +22,7 @@ designIterator = function(ex, .design = data.frame()) {
 
     x = c(as.list(.design[state[! is.ex.state], , drop = FALSE]),
           mapply(function(n, s) ex[[n]][s], n = names.ex.state, s = state[is.ex.state], SIMPLIFY = FALSE))
-    # FIXME names2 is going to BBmisc
-    x[order(BatchJobs:::names2(x))]
+    x[order(names2(x))]
   }
 
   hasNext = function() {
@@ -122,5 +121,5 @@ print.Design = function(x, ...) {
   n = x$designIter$n.states
   storage = x$designIter$storage
   catf("Design for %s with %i row%s", x$id, n, ifelse(n == 1L, "", "s"))
-  cat(collapse(sprintf("  %-10s: %s", names(storage), storage), "\n"))
+  cat(collapse(sprintf("  %-10s: %s", names(storage), storage), "\n"), "\n")
 }

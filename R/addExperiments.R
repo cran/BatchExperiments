@@ -63,11 +63,11 @@
 #' iris.design <- makeDesign("iris", exhaustive=pars)
 #'
 #' # Define decision tree parameters:
-#' pars <- list(minsplit=c(5, 10, 20), cp=c(0.01, 0.1))
+#' pars <- list(minsplit=c(10, 20), cp=c(0.01, 0.1))
 #' tree.design <- makeDesign("tree", exhaustive=pars)
 #'
 #' # Define random forest parameters:
-#' pars <- list(ntree=c(100, 500, 1000))
+#' pars <- list(ntree=c(100, 500))
 #' forest.design <- makeDesign("forest", exhaustive=pars)
 #'
 #' # Add experiments to the registry:
@@ -138,7 +138,8 @@
 #' addExperiments(reg, repls=10)
 #' submitJobs(reg)
 #'
-#' # Gather informations from the experiments, in this case function value and if the algorithm convergenced:
+#' # Gather informations from the experiments, in this case function value
+#' # and whether the algorithm convergenced:
 #' reduceResultsExperiments(reg, fun=function(job, res) res[c("value", "convergence")])
 #' @aliases Experiment
 #' @export
@@ -154,7 +155,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
 
   # check prob.designs
   if (missing(prob.designs)) {
-    prob.designs = lapply(dbGetProblemIds(reg), makeDesign)
+    prob.designs = lapply(dbGetAllProblemIds(reg), makeDesign)
   } else {
     if (is.character(prob.designs)) {
       prob.designs = lapply(prob.designs, makeDesign)
@@ -166,7 +167,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
       stop("Format of prob.designs not supported. Must be a character vector, a design or list of designs")
     }
     ids = unique(extractSubList(prob.designs, "id"))
-    found = ids %in% dbGetProblemIds(reg)
+    found = ids %in% dbGetAllProblemIds(reg)
     if (! all(found))
       stopf("%i problems have not been added to registry for designs: %s",
             sum(!found), collapse(ids[!found]))
@@ -174,7 +175,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
 
   # check algo.designs
   if (missing(algo.designs)) {
-    algo.designs = lapply(dbGetAlgorithmIds(reg), makeDesign)
+    algo.designs = lapply(dbGetAllAlgorithmIds(reg), makeDesign)
   } else {
     if (is.character(algo.designs)) {
       algo.designs = lapply(algo.designs, makeDesign)
@@ -186,7 +187,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
       stop("Format of algo.designs not supported. Must be a character vector, a design or list of designs")
     }
     ids = unique(extractSubList(algo.designs, "id"))
-    found = ids %in% dbGetAlgorithmIds(reg)
+    found = ids %in% dbGetAllAlgorithmIds(reg)
     if (! all(found))
       stopf("%i algorithms have not been added to registry for designs: %s",
             sum(!found), collapse(ids[!found]))

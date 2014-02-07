@@ -2,8 +2,8 @@
 \alias{getIndex}
 \title{Group experiments.}
 \usage{
-  getIndex(reg, ids, by.prob = FALSE, by.algo = FALSE,
-    by.repl = FALSE, by.prob.pars, by.algo.pars)
+getIndex(reg, ids, by.prob = FALSE, by.algo = FALSE, by.repl = FALSE,
+  by.prob.pars, by.algo.pars, enclos = parent.frame())
 }
 \arguments{
   \item{reg}{[\code{\link{ExperimentRegistry}}]\cr
@@ -30,14 +30,19 @@
   group experiments by this R expression.  The expression
   is evaluated in the environment of algorithm parameters
   and converted to a factor using \code{\link{as.factor}}.}
+
+  \item{enclos}{[\code{environment}]\cr Enclosing frame for
+  evaluation of parameters used by \code{by.prob.pars} and
+  \code{by.algo.pars}, see \code{\link[base]{eval}}.
+  Defaults to the parent frame.}
 }
 \value{
-  [\code{list}]. List of factors.
+[\code{list}]. List of factors.
 }
 \description{
-  Creates a list of \code{\link{factor}} to use in
-  functions like \code{\link{tapply}}, \code{\link{by}} or
-  \code{\link{aggregate}}.
+Creates a list of \code{\link{factor}} to use in functions
+like \code{\link{tapply}}, \code{\link{by}} or
+\code{\link{aggregate}}.
 }
 \examples{
 # create a registry and add problems and algorithms

@@ -1,10 +1,10 @@
 \name{addProblem}
-\alias{addProblem}
 \alias{Problem}
+\alias{addProblem}
 \title{Add a problem to registry.}
 \usage{
-  addProblem(reg, id, static = NULL, dynamic = NULL,
-    seed = NULL, overwrite = FALSE)
+addProblem(reg, id, static = NULL, dynamic = NULL, seed = NULL,
+  overwrite = FALSE)
 }
 \arguments{
   \item{reg}{[\code{\link{ExperimentRegistry}}]\cr
@@ -50,9 +50,9 @@
   \code{FALSE}.}
 }
 \value{
-  [\code{character(1)}]. Invisibly returns the id.
+[\code{character(1)}]. Invisibly returns the id.
 }
 \description{
-  Add a algorithm to problem and stores it on disk.
+Add a algorithm to problem and stores it on disk.
 }
 

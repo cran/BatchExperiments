@@ -33,6 +33,19 @@
 #' @param packages [\code{character}]\cr
 #'   Packages that will always be loaded on each node.
 #'   Default is \code{character(0)}.
+#' @param src.dirs [\code{character}]\cr
+#'   Directories relative to your \code{work.dir} containing R scripts
+#'   to be sourced on registry load (both on slave and master).
+#'   Files not matching the pattern \dQuote{\\.[Rr]$} are ignored.
+#'   Useful if you have many helper functions that are needed during the execution of your jobs.
+#'   These files should only contain function definitions and no executable code.
+#'   Default is \code{character(0)}.
+#' @param src.files [\code{character}]\cr
+#'   R scripts files relative to your \code{work.dir}
+#'   to be sourced on registry load (both on slave and master).
+#'   Useful if you have many helper functions that are needed during the execution of your jobs.
+#'   These files should only contain function definitions and no executable code.
+#'   Default is \code{character(0)}.
 #' @param skip [\code{logical(1)}]\cr
 #'   Skip creation of a new registry if a registry is found in \code{file.dir}.
 #'   Defaults to \code{TRUE}.
@@ -40,17 +53,18 @@
 #' @export
 #' @aliases ExperimentRegistry
 makeExperimentRegistry = function(id="BatchExperimentRegistry", file.dir, sharding=TRUE, work.dir, multiple.result.files = FALSE,
-                                  seed, packages=character(0L), skip = TRUE) {
+                                  seed, packages=character(0L), src.dirs=character(0L), src.files=character(0L), skip = TRUE) {
   if (missing(file.dir))
-    file.dir = file.path(getwd(), paste(id, "files", sep="-"))
+    file.dir = file.path(getwd(), paste0(id, "-files"))
   checkArg(skip, "logical", len=1L, na.ok=FALSE)
   if (skip && BatchJobs:::isRegistryDir(file.dir))
     return(loadRegistry(file.dir = file.dir))
   reg = BatchJobs:::makeRegistryInternal(id, file.dir, sharding,
-    work.dir, multiple.result.files, seed, union(packages, "BatchExperiments"))
+    work.dir, multiple.result.files, seed, union(packages, "BatchExperiments"),
+    src.dirs, src.files)
   class(reg) = c("ExperimentRegistry", "Registry")
   BatchJobs:::dbCreateJobStatusTable(reg, extra.cols=", repl INTEGER, prob_seed INTEGER", constraints=", UNIQUE(job_def_id, repl)")
-  BatchJobs:::dbCreateJobDefTable(reg)
+  BatchJobs::dbCreateJobDefTable(reg)
   dbCreateExtraTables(reg)
   dbCreateExpandedJobsViewBE(reg)
   BatchJobs:::checkDir(file.path(reg$file.dir, "problems"), create=TRUE)
@@ -62,14 +76,14 @@ makeExperimentRegistry = function(id="BatchExperimentRegistry", file.dir, shardi
 #' @S3method print ExperimentRegistry
 print.ExperimentRegistry = function(x, ...) {
   cat("Experiment registry:",  x$id, "\n")
-  cat("  Number of problems:", length(dbGetProblemIds(x)), "\n")
-  cat("  Number of algorithms:", length(dbGetAlgorithmIds(x)), "\n")
+  cat("  Number of problems:", length(dbGetAllProblemIds(x)), "\n")
+  cat("  Number of algorithms:", length(dbGetAllAlgorithmIds(x)), "\n")
   cat("  Number of jobs:", getJobNr(x), "\n")
   cat("  Files dir:", x$file.dir, "\n")
   cat("  Work dir:", x$work.dir, "\n")
   cat("  Multiple result files:", x$multiple.result.files, "\n")
   cat("  Seed:", x$seed, "\n")
-  cat("  Required packages:", paste(names(x$packages), collapse=", "), "\n")
+  cat("  Required packages:", collapse(names(x$packages), ", "), "\n")
 }
 
 checkExperimentRegistry = function(reg, strict = FALSE) {
