@@ -1,6 +1,5 @@
 makeProblem = function(id, static, dynamic) {
-  setClasses(list(id=id, static=static, dynamic=dynamic),
-             "Problem")
+  setClasses(list(id = id, static = static, dynamic = dynamic), "Problem")
 }
 
 #FIXME the seed mechansim is described slighlty wrong! fix! random seed!
@@ -41,40 +40,38 @@ makeProblem = function(id, static, dynamic) {
 #' @return [\code{character(1)}]. Invisibly returns the id.
 #' @aliases Problem
 #' @export
-addProblem = function(reg, id, static=NULL, dynamic=NULL, seed=NULL, overwrite=FALSE)  {
-  checkExperimentRegistry(reg, strict=TRUE)
-  checkArg(id, cl = "character", len=1L, na.ok = FALSE)
+addProblem = function(reg, id, static = NULL, dynamic = NULL, seed = NULL, overwrite = FALSE)  {
+  checkExperimentRegistry(reg, strict = TRUE)
   BatchJobs:::checkIdValid(id)
-  if (!is.null(seed)) {
-    seed = convertInteger(seed)
-    checkArg(seed, "integer", len=1L, na.ok=FALSE)
-  }
-  checkArg(overwrite, "logical", len=1L, na.ok=FALSE)
+  if (!is.null(seed))
+    seed = asInt(seed)
+  assertFlag(overwrite)
 
   if (is.null(static) && is.null(dynamic))
     stop("One of args 'static' or 'dynamic' must not be NULL!")
   if (id %in% dbGetAllAlgorithmIds(reg))
     stopf("Algorithm with same id as your problem already exists: %s", id)
   if (!overwrite && id %in% dbGetAllProblemIds(reg))
-    stopf("Problem with same id already exists and overwrite=FALSE: %s", id)
+    stopf("Problem with same id already exists and overwrite = FALSE: %s", id)
 
   fn = getProblemFilePaths(reg$file.dir, id)
-  message("Writing problem files: ", collapse(fn, sep=", "))
-  save(file=fn["static"], static)
-  save(file=fn["dynamic"], dynamic)
+  info("Writing problem files: %s", collapse(fn, sep = ", "))
+  save(file = fn["static"], static)
+  save(file = fn["dynamic"], dynamic)
   dbAddProblem(reg, id, seed)
   invisible(id)
 }
 
-#' @S3method print Problem
+#' @export
 print.Problem = function(x, ...) {
   cat("Problem:", x$id, "\n")
 }
 
-loadProblem = function(reg, id, seed=TRUE) {
+loadProblem = function(reg, id, seed = TRUE) {
+  parts = getProblemFilePaths(reg$file.dir, id)
   prob = makeProblem(id = id,
-                     static = getProblemPart(reg$file.dir, id, "static"),
-                     dynamic = getProblemPart(reg$file.dir, id, "dynamic"))
+    static = load2(parts["static"], "static", impute = NULL),
+    dynamic = load2(parts["dynamic"], "dynamic", impute = NULL))
   if (seed) {
     query = sprintf("SELECT pseed FROM %s_prob_def WHERE prob_id = '%s'", reg$id, id)
     prob$seed = BatchJobs:::dbDoQuery(reg, query)$pseed
@@ -82,41 +79,20 @@ loadProblem = function(reg, id, seed=TRUE) {
   prob
 }
 
-getProblemPart = function(file.dir, id, part) {
-  fn = getProblemFilePaths(file.dir, id)[part]
-  if (!file.exists(fn))
-    return(NULL)
-  load2(fn, part)
-}
-
-# returns a functions which returns the static problem part
-getStaticLazy = function(reg, job) {
-  function() getProblemPart(reg$file.dir, job$prob.id, "static")
-}
-
-# returns a function which computes the dynamic problem part
-getDynamicLazy = function(reg, job) {
-  dynamic.fun = getProblemPart(reg$file.dir, job$prob.id, "dynamic")
+calcDynamic = function(reg, job, static, dynamic.fun) {
   if (is.null(dynamic.fun))
     return(function() NULL)
-
   prob.use = c("job", "static")
   prob.use = setNames(prob.use %in% names(formals(dynamic.fun)), prob.use)
-  if (prob.use["static"])
-    static = getStaticLazy(reg, job)
 
-  # we avoid copies and let lazy evaluation kick in if the specific parts are not
-  # needed. Seems a bit cumbersome, but worth it
   f = switch(sum(c(1L, 2L)[prob.use]) + 1L,
-             function(...) dynamic.fun(...),
-             function(...) dynamic.fun(job=job, ...),
-             function(...) dynamic.fun(static=static(), ...),
-             function(...) dynamic.fun(job=job, static=static(), ...))
+    function(...) dynamic.fun(...),
+    function(...) dynamic.fun(job = job, ...),
+    function(...) dynamic.fun(static = static, ...),
+    function(...) dynamic.fun(job = job, static = static, ...))
 
-  function() {
-    messagef("Generating problem %s ...", job$prob.id)
-    seed = BatchJobs:::seeder(reg, job$prob.seed)
-    on.exit(seed$reset())
-    do.call(f, job$prob.pars)
-  }
+  info("Generating problem %s ...", job$prob.id)
+  seed = BatchJobs:::seeder(reg, job$prob.seed)
+  on.exit(seed$reset())
+  do.call(f, job$prob.pars)
 }

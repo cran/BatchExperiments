@@ -17,13 +17,13 @@
 #' @rdname ExperimentJob
 NULL
 
-makeExperimentJob = function(id=NA_integer_, prob.id, prob.pars, algo.id, algo.pars, repl, seed, prob.seed) {
-  setClasses(list(id=id, prob.id=prob.id, prob.pars=prob.pars, algo.id=algo.id,
-                  algo.pars=algo.pars, repl=repl, seed=seed, prob.seed=prob.seed),
+makeExperimentJob = function(id = NA_integer_, prob.id, prob.pars, algo.id, algo.pars, repl, seed, prob.seed) {
+  setClasses(list(id = id, prob.id = prob.id, prob.pars = prob.pars, algo.id = algo.id,
+                  algo.pars = algo.pars, repl = repl, seed = seed, prob.seed = prob.seed),
              c("ExperimentJob", "Job"))
 }
 
-#' @S3method print ExperimentJob
+#' @export
 print.ExperimentJob = function(x, ...) {
   cat("Experiment:", "\n")
   cat("  Problem:", x$prob.id, "\n")

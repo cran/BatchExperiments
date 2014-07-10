@@ -10,22 +10,22 @@
 #'   Default is \code{FALSE}.
 #' @return Nothing.
 #' @export
-removeAlgorithm = function(reg, id, force=FALSE) {
-  checkExperimentRegistry(reg, strict=TRUE)
+removeAlgorithm = function(reg, id, force = FALSE) {
+  checkExperimentRegistry(reg, strict = TRUE)
   BatchJobs:::syncRegistry(reg)
-  checkArg(id, "character", len=1L, na.ok=FALSE)
+  assertString(id)
 
   if (id %nin% dbGetAllAlgorithmIds(reg))
     stop("Algorithm not present in registry: ", id)
 
-  message("Removing Experiments from database")
-  ids = dbFindExperiments(reg, algo.pattern=id, like=FALSE)
-  removeExperiments(reg, ids=ids, force=force)
-  message("Removing Algorithm from database")
+  info("Removing Experiments from database")
+  ids = dbFindExperiments(reg, algo.pattern = id, like = FALSE)
+  removeExperiments(reg, ids = ids, force = force)
+  info("Removing Algorithm from database")
   dbRemoveAlgorithm(reg, id)
 
   fn = getAlgorithmFilePath(reg$file.dir, id)
-  message("Deleting algorithm file: ", fn)
+  info("Deleting algorithm file: %s", fn)
   ok = file.remove(fn)
   if (!ok)
     warningf("Could not remove algorithm file: %s", fn)

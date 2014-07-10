@@ -8,8 +8,8 @@
 #' @return [\code{\link{Problem}}].
 #' @export
 getProblem = function(reg, id) {
-  checkExperimentRegistry(reg, strict=TRUE)
-  checkArg(id, "character", na.ok=FALSE, len=1L)
+  checkExperimentRegistry(reg, strict = TRUE)
+  assertString(id)
   pids = dbGetAllProblemIds(reg)
   if (id %nin% pids)
     stop("Unknown problem id, possible candidates are: ", collapse(pids))

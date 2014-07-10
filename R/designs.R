@@ -80,43 +80,32 @@ designIterator = function(ex, .design = data.frame()) {
 #' @aliases Design
 #' @examples \dontrun{
 #' # simple design for algorithm "a1" with no parameters:
-#' design <- makeDesign("a1")
+#' design = makeDesign("a1")
 #'
 #' # design for problem "p1" using predefined parameter combinations
-#' design <- makeDesign("p1", design = data.frame(alpha = 0:1, beta = c(0.1, 0.2)))
+#' design = makeDesign("p1", design = data.frame(alpha = 0:1, beta = c(0.1, 0.2)))
 #'
 #' # creating a list of designs for several algorithms at once, all using the same
 #' # exhaustive grid of parameters
-#' designs <- lapply(c("a1", "a2", "a3"), makeDesign,
+#' designs = lapply(c("a1", "a2", "a3"), makeDesign,
 #'                   exhaustive = list(alpha = 0:1, gamma = 1:10/10))
 #' }
-makeDesign = function(id, design=data.frame(), exhaustive=list()) {
+makeDesign = function(id, design = data.frame(), exhaustive = list()) {
   # ... if we had the registry here, we could do some sanity checks, e.g.
   # test if the storage mode of parameters matches the storage mode of those
   # in the database
   # if we push out a not backward compatible version, do this here.
-  checkArg(id, "character", len=1L, na.ok=FALSE)
-  checkArg(design, "data.frame")
-  checkArg(exhaustive, "list")
-  if (!isProperlyNamed(exhaustive))
-    stop("Argument exhaustive must be a properly named list!")
-  if (!all(vapply(exhaustive, is.atomic, logical(1L))))
-    stop("All elements of exhaustive must be an atomic vector type!")
-  if (! all(vapply(exhaustive, length, integer(1L)) >= 1L))
+  assertString(id)
+  assertDataFrame(design, types = "atomic")
+  assertList(exhaustive, types = "atomic", names = "named")
+  if (any(viapply(exhaustive, length) == 0L))
     stop("All elements of exhaustive must have at least have length 1!")
   if (anyDuplicated(c(names(design), names(exhaustive))) > 0L)
     stop("Duplicated design parameters found!")
-
-  if (ncol(design) > 0L) {
-    if (!all(vapply(design, function(x) is.atomic(x) | is.factor(x), logical(1L))))
-      stop("All columns of design must be either of atomic type or a factor!")
-  }
-
-  setClasses(list(id = id, designIter=designIterator(exhaustive, .design = design)),
-             "Design")
+  setClasses(list(id = id, designIter = designIterator(exhaustive, .design = design)), "Design")
 }
 
-#' @S3method print Design
+#' @export
 print.Design = function(x, ...) {
   n = x$designIter$n.states
   storage = x$designIter$storage
