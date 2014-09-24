@@ -1,10 +1,12 @@
-#' Reduce very many results in parallel.
+#' @title Reduce very many results in parallel.
 #'
+#' @description
 #' Basically the same as \code{\link{reduceResultsExperiments}} but creates a few (hopefully short) jobs
 #' to reduce the results in parallel. The function internally calls \code{\link{batchMapQuick}},
 #' does \dQuote{busy-waiting} till
 #' all jobs are done and cleans all temporary files up.
-#' Useful when you have very results and reducing is slow.
+#'
+#' The rows are ordered as \code{ids} and named with \code{ids}, so one can easily index them.
 #'
 #' @param reg [\code{\link{ExperimentRegistry}}]\cr
 #'   Registry.
@@ -21,24 +23,37 @@
 #'   of \code{res}.
 #' @param ... [any]\cr
 #'   Additional arguments to \code{fun}.
+#' @param timeout [\code{integer(1)}]
+#'   Seconds to wait for completion. Passed to \code{\link[BatchJobs]{waitForJobs}}.
+#'   Default is 648400 (one week).
 #' @param njobs [\code{integer(1)}]
 #'   Number of parallel jobs to create.
 #'   Default is 20.
 #' @param strings.as.factors [\code{logical(1)}]
 #'   Should all character columns in result be converted to factors?
 #'   Default is \code{default.stringsAsFactors()}.
+#' @param impute.val [\code{named list}]\cr
+#'   If not missing, the value of \code{impute.val} is used as a replacement for the
+#'   return value of function \code{fun} on missing results. An empty list is allowed.
 #' @return [\code{data.frame}]. Aggregated results, containing problem and algorithm paramaters and collected values.
 #' @export
-reduceResultsExperimentsParallel = function(reg, ids, part = as.character(NA), fun, ..., njobs = 20L, strings.as.factors = default.stringsAsFactors()) {
+reduceResultsExperimentsParallel = function(reg, ids, part = NA_character_, fun, ...,
+  timeout = 604800L, njobs = 20L, strings.as.factors = default.stringsAsFactors(), impute.val) {
   checkExperimentRegistry(reg, strict = TRUE)
   BatchJobs:::syncRegistry(reg)
   if (missing(ids)) {
-    ids = BatchJobs:::dbFindDone(reg)
+    ids = done = BatchJobs:::dbFindDone(reg)
   } else {
     ids = BatchJobs:::checkIds(reg, ids)
-    ndone = BatchJobs:::dbFindDone(reg, ids, negate = TRUE)
-    if (length(ndone) > 0L)
-      stopf("No results available for experiments with ids: %s", collapse(ndone))
+    done = BatchJobs:::dbFindDone(reg, ids)
+    if (!missing(impute.val)) {
+      if (!is.list(impute.val) || !isProperlyNamed(impute.val))
+        stop("Argument 'impute.val' must be a properly named list")
+    } else {
+      not.done = which(ids %nin% done)
+      if (length(not.done) > 0L)
+        stopf("No results available for jobs with ids: %s", collapse(not.done))
+    }
   }
   BatchJobs:::checkPart(reg, part)
   if (missing(fun)){
@@ -62,25 +77,22 @@ reduceResultsExperimentsParallel = function(reg, ids, part = as.character(NA), f
 
   ch = chunk(ids, n.chunks = njobs, shuffle = FALSE)
   more.args = c(list(reg = reg, part = part, fun = fun, strings.as.factors = strings.as.factors), list(...))
+  if (!missing(impute.val))
+    more.args$impute.val = impute.val
+  prefix = "reduceExperimentsParallel"
+  file.dir.new = file.path(reg$file.dir, basename(tempfile(prefix)))
+  if (length(dir(reg$file.dir, pattern = sprintf("^%s", prefix))))
+    warningf("Found cruft directories from previous calls to reduceResultsExperimentsParallel in %s", reg$file.dir)
+
   # FIXME: Magic constant 10
-  # FIXME: file.dir of reg2 should point to subdir of reg$file.dir
-  #        m/b provide option
-  reg2 = batchMapQuick(function(reg, ii, fun, part, strings.as.factors, ...) {
+  reg2 = batchMapQuick(function(reg, ii, fun, part, strings.as.factors, impute.val, ...) {
     # FIXME this synchronizes the registry on the node!
     reduceResultsExperiments(reg, ii, part = part, fun = fun,
-      block.size = ceiling(length(ii) / 10), strings.as.factors = strings.as.factors, ...)
-  }, ch, more.args = more.args)
+      block.size = ceiling(length(ii) / 10), strings.as.factors = strings.as.factors,
+      impute.val = impute.val, ...)
+  }, ch, more.args = more.args, file.dir = file.dir.new)
 
-  BatchJobs:::syncRegistry(reg2)
-  while (length(BatchJobs:::dbFindDone(reg2, negate = TRUE)) > 0L) {
-    # FIXME: what happens if jobs hit the wall time?
-    #        infinite loop?
-    errors = BatchJobs:::dbGetErrorMsgs(reg2, filter = TRUE, limit = 1L)
-    if (nrow(errors) > 0L)
-      stopf("There were some errors while reducing. First error:\n%s", errors$error)
-    Sys.sleep(10)
-    BatchJobs:::syncRegistry(reg2)
-  }
+  waitForJobs(reg2, timeout = timeout, stop.on.error = TRUE)
 
   res = reduceResults(reg2, fun = function(aggr, job, res) {
     d = rbind.fill(aggr, res)
@@ -88,8 +100,8 @@ reduceResultsExperimentsParallel = function(reg, ids, part = as.character(NA), f
     attr(d, "algo.pars.names") = union(attr(aggr, "algo.pars.names"), attr(res, "algo.pars.names"))
     return(d)
   }, init = data.frame())
-
   unlink(reg2$file.dir, recursive = TRUE)
-  return(addClasses(res, "ReducedResultsExperiments"))
-}
 
+  rownames(res) = res$id
+  return(addClasses(res[as.character(ids),, drop = FALSE], "ReducedResultsExperiments"))
+}

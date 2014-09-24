@@ -1,8 +1,10 @@
-#' Remove jobs from registry.
+#' @title Remove jobs from registry.
 #'
+#' @description
 #' THIS DELETES ALL FILES REGARDING THE JOBS, INCLUDING RESULTS!
 #' If you really know what you are doing, you may set \code{force}
 #' to \code{TRUE} to omit sanity checks on running jobs.
+#'
 #' @param reg [\code{\link{ExperimentRegistry}}]\cr
 #'   Registry.
 #' @param ids [\code{integer}]\cr
@@ -12,6 +14,7 @@
 #'   Also remove jobs which seem to be still running.
 #'   Default is \code{FALSE}.
 #' @return Vector of type \code{integer} of removed job ids.
+#' @family remove
 #' @export
 removeExperiments = function(reg, ids, force = FALSE) {
   checkExperimentRegistry(reg, strict = TRUE)

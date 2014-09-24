@@ -2,9 +2,11 @@ makeAlgorithm = function(id, fun) {
   setClasses(list(id = id, fun = fun), "Algorithm")
 }
 
-#' Add an algorithm to registry.
+#' @title Add an algorithm to registry.
 #'
+#' @description
 #' Add an algorithm to registry and stores it on disk.
+#'
 #' @param reg [\code{\link{ExperimentRegistry}}]\cr
 #'   Registry.
 #' @param id [\code{character(1)}]\cr
@@ -25,6 +27,7 @@ makeAlgorithm = function(id, fun) {
 #'   Default is \code{FALSE}.
 #' @return [\code{character(1)}]. Invisibly returns the id.
 #' @aliases Algorithm
+#' @family add
 #' @export
 addAlgorithm = function(reg, id, fun, overwrite = FALSE)  {
   checkExperimentRegistry(reg, strict = TRUE)

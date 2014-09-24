@@ -1,5 +1,6 @@
-#' Add experiemts to the registry.
+#' @title Add experiemts to the registry.
 #'
+#' @description
 #' Add experiments for running algorithms on problems
 #' to the registry, so they can be executed later.
 #'
@@ -21,6 +22,7 @@
 #' @param skip.defined [\code{logical}]\cr
 #'   If set to \code{TRUE}, already defined experiments get skipped. Otherwise an error is thrown.\cr
 #'   Default is FALSE.
+#' @family add
 #' @return Invisibly returns vector of ids of added experiments.
 #' @examples
 #' ### EXAMPLE 1 ###
@@ -109,8 +111,7 @@
 #' aggr = ddply(res, vars, summarise, mean.mcr = mean(mcr))
 #' print(aggr)
 #'
-#'
-#'
+#' \dontrun{
 #' ### EXAMPLE 2 ###
 #' # define two simple test functions
 #' testfun1 = function(x) sum(x^2)
@@ -141,6 +142,7 @@
 #' # Gather informations from the experiments, in this case function value
 #' # and whether the algorithm convergenced:
 #' reduceResultsExperiments(reg, fun = function(job, res) res[c("value", "convergence")])
+#' }
 #' @aliases Experiment
 #' @export
 addExperiments = function(reg, prob.designs, algo.designs, repls = 1L, skip.defined = FALSE) {

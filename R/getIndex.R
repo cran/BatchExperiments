@@ -1,5 +1,6 @@
-#' Group experiments.
+#' @title Group experiments.
 #'
+#' @description
 #' Creates a list of \code{\link{factor}} to use in functions like \code{\link{tapply}}, \code{\link{by}}
 #' or \code{\link{aggregate}}.
 #'
@@ -33,21 +34,22 @@
 #' addProblem(reg, "prob", static = 1)
 #' addAlgorithm(reg, "f0", function(static, dynamic) static)
 #' addAlgorithm(reg, "f1", function(static, dynamic, i, k) static * i^k)
-#' ad = list(makeDesign("f0"), makeDesign("f1", exhaustive = list(i = 1:10, k = 1:3)))
+#' ad = list(makeDesign("f0"), makeDesign("f1", exhaustive = list(i = 1:5, k = 1:3)))
 #' addExperiments(reg, algo.designs = ad)
 #' submitJobs(reg)
 #'
 #' # get grouped job ids
 #' ids = getJobIds(reg)
 #' by(ids, getIndex(reg, by.prob = TRUE, by.algo = TRUE), identity)
-#' ids.f1 = findExperiments(reg, algo.pattern = "f1")
-#' by(ids.f1, getIndex(reg, ids.f1, by.algo.pars = (k == 1)), identity)
+#' ids = findExperiments(reg, algo.pattern = "f1")
+#' by(ids, getIndex(reg, ids, by.algo.pars = (k == 1)), identity)
 #'
 #' # groupwise reduction
-#' ids.f1 = findExperiments(reg, algo.pattern = "f1")
+#' ids = findExperiments(reg, algo.pattern = "f1")
+#' showStatus(reg, ids)
 #' f = function(aggr, job, res) aggr + res
-#' by(ids.f1, getIndex(reg, ids.f1, by.algo.pars = k), reduceResults, reg = reg, fun = f)
-#' by(ids.f1, getIndex(reg, ids.f1, by.algo.pars = i), reduceResults, reg = reg, fun = f)
+#' by(ids, getIndex(reg, ids, by.algo.pars = k), reduceResults, reg = reg, fun = f)
+#' by(ids, getIndex(reg, ids, by.algo.pars = i), reduceResults, reg = reg, fun = f)
 getIndex = function(reg, ids, by.prob = FALSE, by.algo = FALSE, by.repl = FALSE,
                     by.prob.pars, by.algo.pars, enclos = parent.frame()) {
   checkExperimentRegistry(reg, TRUE)
