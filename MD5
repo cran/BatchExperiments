@@ -1,12 +1,12 @@
-87c1e142b5afbac0a882a3d911c3960f *DESCRIPTION
+d760e939fe61de4def0c7347fa867782 *DESCRIPTION
 fab2752fb0ac109a20fce81749417043 *LICENSE
 31d579bb2a332cb171cb2d9939c1f38a *NAMESPACE
-6425f0211d7501d851982d2ca6dc0a38 *NEWS
+adf7ef0437607b85b01f4543495b0d5e *NEWS
 3360f246d9e4d627fa3ce7d74495608d *R/Algorithm.R
 bed2877706d6b333bb83de6ee26f4937 *R/Experiment.R
 b50ecb1adf4085e64fed5b4223d079e0 *R/ExperimentRegistry.R
 5c4e8e554636f6443cf69c277d793935 *R/Problem.R
-41a5d554cdc5fe0b30c948f051dc6f5b *R/addExperiments.R
+6d7cc4b7fc0ea3df75499ae09886753c *R/addExperiments.R
 49a5f0202c31d2a73fc4c476369b7ebc *R/applyJobFunction.R
 caf233cc211d9a77d57e64cc32b07bd0 *R/database.R
 183fba2e91317534133e28788a0f4ee8 *R/designs.R
@@ -21,7 +21,7 @@ bc78953cd1196468c409055669db2fe6 *R/getAlgorithmIds.R
 8d638dbf61f9f8ad32e171af030bb3f2 *R/getProblem.R
 628ae50a3dfc871ef532755550315ccb *R/getProblemIds.R
 11b7c98c7cd220c65848ddf043d77ecc *R/helpers.R
-f93624686e406e2533f35ff9a627c8cd *R/reduceResultsExperiments.R
+f3826d9604cde5e5a9c662ccf54ee6f8 *R/reduceResultsExperiments.R
 e5e7aedc5c4c5eef06d3f30391c4091b *R/reduceResultsExperimentsParallel.R
 693a2feee308026fe13615da960f6f4b *R/removeAlgorithm.R
 f8e4579baea25492e08a25ea74f1b028 *R/removeExperiments.R
@@ -47,7 +47,7 @@ d0430295222e20e793b341e3124a9fc4 *man/getIndex.Rd
 d8eb56fc0f606476c695819a8b8da8f3 *man/getResultVars.Rd
 e6b5c8f3fac8b09620ab54a29a8aa5f6 *man/makeDesign.Rd
 0b8c4fd72592d8c9f5bc3f18ce94fddf *man/makeExperimentRegistry.Rd
-9d89bd35ecf4d1d1fb2f66f65771d7fa *man/reduceResultsExperiments.Rd
+cc0edeb9a72831ccf70144655b9ee8d5 *man/reduceResultsExperiments.Rd
 00693fad54c440299937438ed7a3d688 *man/reduceResultsExperimentsParallel.Rd
 f6442f33353a944a326094dfa9e6a172 *man/removeAlgorithm.Rd
 63c17f0c05bb424e5f9526df0e4fed79 *man/removeExperiments.Rd
