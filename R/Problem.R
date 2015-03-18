@@ -45,7 +45,7 @@ makeProblem = function(id, static, dynamic) {
 #' @export
 addProblem = function(reg, id, static = NULL, dynamic = NULL, seed = NULL, overwrite = FALSE)  {
   checkExperimentRegistry(reg, strict = TRUE)
-  BatchJobs:::checkIdValid(id)
+  checkIdValid(id)
   if (!is.null(seed))
     seed = asInt(seed)
   assertFlag(overwrite)
@@ -84,7 +84,7 @@ loadProblem = function(reg, id, seed = TRUE) {
 
 calcDynamic = function(reg, job, static, dynamic.fun) {
   if (is.null(dynamic.fun))
-    return(function() NULL)
+    return(NULL)
   prob.use = c("job", "static")
   prob.use = setNames(prob.use %in% names(formals(dynamic.fun)), prob.use)
 
