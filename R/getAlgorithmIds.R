@@ -1,5 +1,8 @@
 #' @title Get ids of algorithms in registry.
 #'
+#' @description
+#' Get algorithm ids for jobs.
+#'
 #' @param reg [\code{\link{ExperimentRegistry}}]\cr
 #'   Registry.
 #' @param ids [code{integer}]\cr
@@ -8,9 +11,9 @@
 #' @family get
 #' @export
 getAlgorithmIds = function(reg, ids) {
-  checkExperimentRegistry(reg, strict = TRUE)
+  checkExperimentRegistry(reg, strict = TRUE, writeable = FALSE)
   if (missing(ids))
     return(dbGetAllAlgorithmIds(reg))
-  BatchJobs:::checkIds(reg, ids)
+  ids = checkIds(reg, ids)
   unique(dbGetAlgorithmIds(reg, ids))
 }

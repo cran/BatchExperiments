@@ -1,5 +1,8 @@
 #' @title Get all parts required to run a single job.
 #'
+#' @description
+#' Get all parts which define an \code{\link{Experiment}}.
+#'
 #' @param reg [\code{\link{ExperimentRegistry}}]\cr
 #'   Registry.
 #' @param id [\code{integer(1)}]\cr
@@ -8,8 +11,8 @@
 #' @family get
 #' @export
 getExperimentParts = function(reg, id) {
-  checkExperimentRegistry(reg, strict = TRUE)
-  id = BatchJobs:::checkId(reg, id)
+  checkExperimentRegistry(reg, strict = TRUE, writeable = FALSE)
+  id = checkIds(reg, id, len = 1L)
 
   res = namedList(c("job", "prob", "instance", "algo"))
   res$job = dbGetJobs(reg, id)[[1L]]

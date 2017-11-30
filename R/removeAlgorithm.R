@@ -14,8 +14,8 @@
 #' @family remove
 #' @export
 removeAlgorithm = function(reg, id, force = FALSE) {
-  checkExperimentRegistry(reg, strict = TRUE)
-  BatchJobs:::syncRegistry(reg)
+  checkExperimentRegistry(reg, strict = TRUE, writeable = TRUE)
+  syncRegistry(reg)
   assertString(id)
 
   if (id %nin% dbGetAllAlgorithmIds(reg))

@@ -152,8 +152,8 @@ addExperiments = function(reg, prob.designs, algo.designs, repls = 1L, skip.defi
 #' @method addExperiments ExperimentRegistry
 #' @export
 addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, repls = 1L, skip.defined = FALSE) {
-  checkExperimentRegistry(reg, strict = TRUE)
-  BatchJobs:::syncRegistry(reg)
+  checkExperimentRegistry(reg, strict = TRUE, writeable = TRUE)
+  syncRegistry(reg)
 
   # check prob.designs
   if (missing(prob.designs)) {
@@ -161,7 +161,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   } else {
     if (is.character(prob.designs)) {
       prob.designs = lapply(prob.designs, makeDesign)
-    } else if (is(prob.designs, "Design")) {
+    } else if (inherits(prob.designs, "Design")) {
       prob.designs = list(prob.designs)
     } else if (is.list(prob.designs)) {
       checkListElementClass(prob.designs, "Design")
@@ -181,7 +181,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   } else {
     if (is.character(algo.designs)) {
       algo.designs = lapply(algo.designs, makeDesign)
-    } else if (is(algo.designs, "Design")) {
+    } else if (inherits(algo.designs, "Design")) {
       algo.designs = list(algo.designs)
     } else if (is.list(algo.designs)) {
       checkListElementClass(algo.designs, "Design")
@@ -207,9 +207,28 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   # internal helper functions
   mq = function(lines, ..., con, bind.data = NULL) {
     q = sprintf(collapse(lines, sep = " "), ...)
-    if(is.null(bind.data))
-      return(dbGetQuery(con, q))
-    return(dbGetPreparedQuery(con, q, bind.data = bind.data))
+    if(is.null(bind.data)) {
+      res = NULL
+      dbi.res = dbSendQuery(con, q)
+      if (startsWith(q, "SELECT") || !dbHasCompleted(dbi.res))
+        res = dbFetch(dbi.res)
+      dbClearResult(dbi.res)
+      return(res)
+    }
+
+    res = dbSendQuery(con, q)
+    for (i in seq_row(bind.data)) {
+      row = unname(as.list(bind.data[i, ]))
+      ok = dbBind(res, row)
+      if (startsWith(q, "SELECT") || !dbHasCompleted(res))
+        ok = try(dbFetch(res))
+      if(is.error(ok)) {
+        dbClearResult(res)
+        dbRollback(con)
+        stopf("Error in dbAddData: %s", as.character(ok))
+      }
+    }
+    dbClearResult(res)
   }
 
   seripars = function(x) {
@@ -217,14 +236,14 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   }
 
   writeJobDefs = function(job.defs) {
-    data = as.data.frame(do.call(rbind, lapply(job.defs, unlist)))
+    data = rbindlist(job.defs)[, c("prob_id", "prob_pars", "algo_id", "algo_pars"), with = FALSE]
     mq("INSERT INTO tmp(prob_id, prob_pars, algo_id, algo_pars) VALUES(?, ?, ?, ?)",
        con = con, bind.data = data)
   }
 
   # establish persistent connection and create temporary table to fill
   # with job definitions
-  con = BatchJobs:::dbConnectToJobsDB(reg, "rw")
+  con = dbConnectToJobsDB(reg, "rw")
   on.exit(dbDisconnect(con))
 
   # create temporary table for job definitions
@@ -244,7 +263,7 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
 
   # iterate to generate job definitions
   # write to temporary table every x definitions
-  job.defs = BatchJobs:::buffer("list", 5000L, writeJobDefs)
+  job.defs = buffer("list", 5000L, writeJobDefs)
   for (pd in prob.designs) {
     pd$designIter$reset()
     while (pd$designIter$hasNext()) {
@@ -311,10 +330,10 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
             reg$id, max.job.id, con = con)
 
     if(nrow(df) > 0L) {
-      df$seed = BatchJobs:::addIntModulo(df$job_id, reg$seed - 1L)
+      df$seed = addIntModulo(df$job_id, reg$seed - 1L)
       na = is.na(df$pseed)
-      df$prob_seed[ na] = BatchJobs:::getRandomSeed(sum(na))
-      df$prob_seed[!na] = BatchJobs:::addIntModulo(df$pseed[!na], df$repl[!na] - 1L)
+      df$prob_seed[ na] = getRandomSeed(sum(na))
+      df$prob_seed[!na] = addIntModulo(df$pseed[!na], df$repl[!na] - 1L)
       mq("UPDATE %s_job_status SET seed = ?, prob_seed = ? WHERE job_id = ?",
          reg$id, con = con, bind.data = df[c("seed", "prob_seed", "job_id")])
     }
@@ -337,6 +356,6 @@ addExperiments.ExperimentRegistry = function(reg, prob.designs, algo.designs, re
   }
 
   dbCommit(con)
-  BatchJobs:::createShardedDirs(reg, df$job_id)
+  createShardedDirs(reg, df$job_id)
   invisible(df$job_id)
 }

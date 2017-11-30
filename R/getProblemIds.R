@@ -1,5 +1,8 @@
 #' @title Get ids of problems in registry.
 #'
+#' @description
+#' Get problem ids for jobs.
+#'
 #' @param reg [\code{\link{ExperimentRegistry}}]\cr
 #'   Registry.
 #' @param ids [code{integer}]\cr
@@ -8,9 +11,9 @@
 #' @family get
 #' @export
 getProblemIds = function(reg, ids) {
-  checkExperimentRegistry(reg, strict = TRUE)
+  checkExperimentRegistry(reg, strict = TRUE, writeable = FALSE)
   if (missing(ids))
     return(dbGetAllProblemIds(reg))
-  BatchJobs:::checkIds(reg, ids)
+  checkIds(reg, ids)
   unique(dbGetProblemIds(reg, ids))
 }

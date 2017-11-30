@@ -44,7 +44,7 @@ makeProblem = function(id, static, dynamic) {
 #' @family add
 #' @export
 addProblem = function(reg, id, static = NULL, dynamic = NULL, seed = NULL, overwrite = FALSE)  {
-  checkExperimentRegistry(reg, strict = TRUE)
+  checkExperimentRegistry(reg, strict = TRUE, writeable = TRUE)
   checkIdValid(id)
   if (!is.null(seed))
     seed = asInt(seed)
@@ -77,7 +77,7 @@ loadProblem = function(reg, id, seed = TRUE) {
     dynamic = load2(parts["dynamic"], "dynamic", impute = NULL))
   if (seed) {
     query = sprintf("SELECT pseed FROM %s_prob_def WHERE prob_id = '%s'", reg$id, id)
-    prob$seed = BatchJobs:::dbDoQuery(reg, query)$pseed
+    prob$seed = batchQuery(reg, query)$pseed
   }
   prob
 }
@@ -95,7 +95,7 @@ calcDynamic = function(reg, job, static, dynamic.fun) {
     function(...) dynamic.fun(job = job, static = static, ...))
 
   info("Generating problem %s ...", job$prob.id)
-  seed = BatchJobs:::seeder(reg, job$prob.seed)
+  seed = seeder(reg, job$prob.seed)
   on.exit(seed$reset())
   do.call(f, job$prob.pars)
 }

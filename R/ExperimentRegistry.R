@@ -58,19 +58,20 @@ makeExperimentRegistry = function(id = "BatchExperimentRegistry", file.dir, shar
   if (missing(file.dir))
     file.dir = file.path(getwd(), paste0(id, "-files"))
   assertFlag(skip)
-  if (skip && BatchJobs:::isRegistryDir(file.dir))
+  if (skip && isRegistryDir(file.dir))
     return(loadRegistry(file.dir = file.dir))
-  reg = BatchJobs:::makeRegistryInternal(id, file.dir, sharding,
-    work.dir, multiple.result.files, seed, union(packages, "BatchExperiments"),
+  reg = makeRegistryInternal(id, file.dir, sharding,
+    work.dir, multiple.result.files, seed, c("BatchExperiments", packages),
     src.dirs, src.files)
+  reg$packages$BatchExperiments$mandatory = TRUE
   class(reg) = c("ExperimentRegistry", "Registry")
-  BatchJobs:::dbCreateJobStatusTable(reg, extra.cols = ", repl INTEGER, prob_seed INTEGER", constraints = ", UNIQUE(job_def_id, repl)")
+  dbCreateJobStatusTable(reg, extra.cols = ", repl INTEGER, prob_seed INTEGER", constraints = ", UNIQUE(job_def_id, repl)")
   BatchJobs::dbCreateJobDefTable(reg)
   dbCreateExtraTables(reg)
   dbCreateExpandedJobsViewBE(reg)
-  BatchJobs:::checkDir(file.path(reg$file.dir, "problems"), create = TRUE)
-  BatchJobs:::checkDir(file.path(reg$file.dir, "algorithms"), create = TRUE)
-  BatchJobs:::saveRegistry(reg)
+  checkDir(file.path(reg$file.dir, "problems"), create = TRUE)
+  checkDir(file.path(reg$file.dir, "algorithms"), create = TRUE)
+  saveRegistry(reg)
   return(reg)
 }
 
@@ -87,7 +88,7 @@ print.ExperimentRegistry = function(x, ...) {
   cat("  Required packages:", collapse(names(x$packages), ", "), "\n")
 }
 
-checkExperimentRegistry = function(reg, strict = FALSE) {
+checkExperimentRegistry = function(reg, strict = FALSE, writeable = TRUE) {
   cl = class(reg)
   expected = "ExperimentRegistry"
   if (strict) {
@@ -97,5 +98,7 @@ checkExperimentRegistry = function(reg, strict = FALSE) {
     if (expected %nin% cl)
       stopf("Registry class mismatch: Expected argument of class '%s'", expected)
   }
+  if (writeable && isTRUE(reg$read.only))
+    stop("Registry is read-only. Operation not permitted.")
   invisible(TRUE)
 }

@@ -1,5 +1,9 @@
 #' @title Find ids of experiments that match a query.
 #'
+#' @description
+#' Find job ids by querying problem/algorithm ids, problem/algorithm parameters or
+#' replication number.
+#'
 #' @param reg [\code{\link{ExperimentRegistry}}]\cr
 #'   Registry.
 #' @param ids [\code{integer}]\cr
@@ -39,13 +43,13 @@
 #' findExperiments(reg, algo.pars = (n > 2))
 findExperiments = function(reg, ids, prob.pattern, prob.pars, algo.pattern, algo.pars,
   repls, match.substring = TRUE, regexp = FALSE) {
-  checkExperimentRegistry(reg, strict = TRUE)
+  checkExperimentRegistry(reg, strict = TRUE, writeable = FALSE)
   if (!missing(prob.pattern))
     assertString(prob.pattern)
   if (!missing(algo.pattern))
     assertString(algo.pattern)
   if (!missing(repls))
-    repls = asCount(repls, positive = TRUE)
+    repls = asInteger(repls, lower = 0, any.missing = FALSE)
   assertFlag(match.substring)
   assertFlag(regexp)
 

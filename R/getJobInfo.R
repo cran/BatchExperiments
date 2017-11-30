@@ -1,12 +1,12 @@
 #' @method getJobInfo ExperimentRegistry
 #' @export
 getJobInfo.ExperimentRegistry = function(reg, ids, pars = FALSE, prefix.pars = FALSE, select, unit = "seconds") {
-  BatchJobs:::syncRegistry(reg)
+  syncRegistry(reg)
   assertFlag(pars)
   columns = c(id = "job_id", prob = "prob_id", algo = "algo_id", repl = "repl")
   if (pars)
     columns = c(columns, c(prob.pars = "prob_pars", algo.pars = "algo_pars"))
-  tab = BatchJobs:::getJobInfoInternal(reg, ids, select, unit, columns)
+  tab = getJobInfoInternal(reg, ids, select, unit, columns)
 
   # unserialize parameters
   if (pars) {
