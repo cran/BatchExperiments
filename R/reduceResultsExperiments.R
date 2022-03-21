@@ -28,7 +28,7 @@
 #'   Additional arguments to \code{fun}.
 #' @param strings.as.factors [\code{logical(1)}]
 #'   Should all character columns in result be converted to factors?
-#'   Default is \code{default.stringsAsFactors()}.
+#'   Default is \code{FALSE}.
 #' @param block.size [\code{integer(1)}]
 #'   Results will be fetched in blocks of this size.
 #'   Default is max(100, 5 percent of ids).
@@ -45,7 +45,7 @@
 #' @aliases ReducedResultsExperiments
 #' @export
 reduceResultsExperiments = function(reg, ids, part = NA_character_, fun, ...,
-  strings.as.factors = default.stringsAsFactors(), block.size, impute.val,
+  strings.as.factors = FALSE, block.size, impute.val,
   apply.on.missing = FALSE, progressbar = TRUE) {
 
   checkExperimentRegistry(reg, strict = TRUE, writeable = FALSE)
